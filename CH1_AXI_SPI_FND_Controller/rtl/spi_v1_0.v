@@ -13,8 +13,10 @@ module spi_v1_0 #(
     parameter integer C_S00_AXI_ADDR_WIDTH = 4
 ) (
     // Users to add ports here
-
-
+    output wire       o_sclk,
+    output wire       o_mosi,
+    input  wire       i_miso,
+    output wire       o_ss_n,
     // User ports ends
     // Do not modify the ports beyond this line
 
@@ -49,6 +51,12 @@ module spi_v1_0 #(
     input wire s00_axi_rready
 );
     // my code begin
+    wire [7:0] w_clk_div;
+    wire       w_start;
+    wire [7:0] w_tx_data;
+    wire [7:0] w_rx_data;
+    wire       w_busy;
+    wire       w_done;
     
     // my code end
 
@@ -61,7 +69,12 @@ module spi_v1_0 #(
         .S_AXI_ACLK(s00_axi_aclk),
         .S_AXI_ARESETN(s00_axi_aresetn),
         // my code begin
-
+        .o_clk_div(w_clk_div),
+        .o_start(w_start),
+        .o_tx_data(w_tx_data),
+        .i_rx_data(w_rx_data),
+        .i_busy(w_busy),
+        .i_done(w_done),
         // my code end
         // AW Channel
         .S_AXI_AWADDR(s00_axi_awaddr),
@@ -90,7 +103,22 @@ module spi_v1_0 #(
     );
 
     // Add user logic here
-    spi U_SPI();
+    spi U_SPI(
+    .i_clk(s00_axi_aclk),
+    .i_rst_n(s00_axi_aresetn),
+    // internal signals
+    .i_clk_div(w_clk_div),
+    .i_start(w_start),
+    .i_tx_data(w_tx_data),
+    .o_rx_data(w_rx_data),
+    .o_busy(w_busy),
+    .o_done(w_done),
+    // external signals
+    .o_sclk(o_sclk),
+    .o_mosi(o_mosi),
+    .i_miso(i_miso),
+    .o_ss_n(o_ss_n)
+    );
     // User logic ends
 
 endmodule

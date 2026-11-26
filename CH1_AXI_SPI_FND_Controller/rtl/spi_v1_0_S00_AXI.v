@@ -186,23 +186,29 @@ module spi_v1_0_S00_AXI #(
     // tdr
     always @(posedge S_AXI_ACLK) begin
         if (S_AXI_ARESETN == 1'b0) begin
-            spi_tdr   <= 0;
+            spi_tdr <= 0;
+            r_start <= 1'b0;
         end else begin
             if (slv_reg_wren) begin
                 if( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 2'h1) begin
                     spi_tdr[7:0] <= S_AXI_WDATA[7:0];
+                    r_start      <= 1'b1;
                 end
-            end else r_tx_start <= 1'b0;
+            end else if (slv_reg_rden) begin
+                if( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 2'h1) begin
+                    r_start <= 1'b1;
+                end
+            end else r_start <= 1'b0;
         end
     end
 
     // rdr
     always @(posedge S_AXI_ACLK) begin
         if (S_AXI_ARESETN == 1'b0) begin
-            spi_rdr  <= 0;
+            spi_rdr   <= 0;
             r_rx_flag <= 1'b0;
         end else begin
-            if (i_rx_done) begin
+            if (i_done) begin
                 spi_rdr[7:0] <= i_rx_data;
                 r_rx_flag <= 1'b1;
             end
@@ -268,7 +274,7 @@ module spi_v1_0_S00_AXI #(
             axi_arready <= 1'b0;
             axi_araddr  <= 32'b0;
         end else begin
-            if (~axi_arready && S_AXI_ARVALID) begin
+            if (~axi_arready && S_AXI_ARVALID && i_done) begin
                 // indicates that the slave has acceped the valid read address
                 axi_arready <= 1'b1;
                 // Read address latching
@@ -310,10 +316,10 @@ module spi_v1_0_S00_AXI #(
     always @(*) begin
         // Address decoding for reading registers
         case (axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB])
-            2'h0   : reg_data_out <= {{30{1'b0}}, r_rx_flag, i_tx_busy} ;
+            2'h0   : reg_data_out <= {{30{1'b0}}, r_rx_flag, i_busy} ;
             2'h1   : reg_data_out <= spi_tdr;
             2'h2   : reg_data_out <= spi_rdr;
-            2'h3   : reg_data_out <= spi_cr;
+            2'h3   : reg_data_out <= spi_brr;
             default : reg_data_out <= 0;
         endcase
     end
